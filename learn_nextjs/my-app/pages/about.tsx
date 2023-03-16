@@ -1,34 +1,54 @@
 import Link from "next/link"
 import Layout from '@/components/layout' 
 import {Button} from 'semantic-ui-react'
+import {
+    GetServerSideProps
+} from 'next'
 
-export async function getStaticProps() {
-    const sqlite3 = require('sqlite3')
-    const db = new sqlite3.Database('db.sqlite3')
-    const sql = `SELECT a from T`
-    let data: any[] = [];
-    db.all(sql, [], (err: any, rows: any) => {
-        if(err) {
-            data.push(err)
-        }
-        rows.forEach((row: any) => data.push(row))
-    })
+import useSWR from 'swr'
+import React from 'react'
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
     return {
         props: {
-            data
+            data: context.req.url
         }
     }
 }
 
-function About(props : {data: any[]}) {
+function About(props : {data: any}) {
+    const [fileList, setFileList] = React.useState<any>()
+    const [isLoading, setIsLoading] = React.useState<boolean>(false)
+
+    function handleClick() {
+        if(isLoading) {
+            return
+        }
+        setFileList({})
+        setIsLoading(true)
+        fetch('/api/hello').then(res => {
+            let data = res.json()
+            data.then(value => {
+                setFileList(value)
+                console.log("Ding.", value)
+                setIsLoading(false)
+    
+            })
+        })
+    }
+
     return <Layout currentPage="about">
         <h1>About</h1>
         <pre>
         Data = {
-            JSON.stringify(props.data)
+            JSON.stringify(fileList, null, 2)
         }
         </pre>
-        <Button primary>Semantic UI Button</Button>
+
+        <Button primary onClick={handleClick}>
+            {isLoading && "Is Loading"}
+            {!isLoading && "Load"}
+        </Button>
     </Layout>
 }
 
